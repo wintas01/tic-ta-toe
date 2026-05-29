@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tic Tac Toe — Multiplayer</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f0f0f;
+      color: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    h1 {
+      font-size: 1.6rem;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      margin-bottom: 2rem;
+      color: #ffffff;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 420px;
+    }
+
+    /* Setup */
+    .setup-screen { text-align: center; }
+    .setup-screen p { font-size: 1rem; color: #aaa; margin-bottom: 1.5rem; }
+
+    .players-row {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.5rem;
+    }
+
+    .player-field { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+    .player-field label { font-size: 13px; color: #888; }
+
+    input.name-input {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #f0f0f0;
+      font-size: 15px;
+      padding: 8px 12px;
+      width: 130px;
+      outline: none;
+      text-align: center;
+      transition: border-color 0.15s;
+    }
+    input.name-input:focus { border-color: #555; }
+
+    .vs-label { font-size: 1.1rem; color: #555; font-weight: 500; }
+
+    /* Buttons */
+    button {
+      background: #1e1e1e;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #f0f0f0;
+      cursor: pointer;
+      font-size: 14px;
+      padding: 9px 22px;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    button:hover { background: #2a2a2a; border-color: #444; }
+    button:active { transform: scale(0.97); }
+    button.primary {
+      background: #2563eb;
+      border-color: #2563eb;
+      color: #fff;
+      font-weight: 500;
+    }
+    button.primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+
+    /* Game screen */
+    .game-screen { display: none; }
+
+    /* Badges */
+    .badges-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      gap: 8px;
+    }
+
+    .player-badge {
+      flex: 1;
+      text-align: center;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #2a2a2a;
+      background: #161616;
+      font-size: 13px;
+      color: #666;
+      transition: all 0.2s;
+    }
+    .player-badge .symbol { font-size: 18px; display: block; margin-bottom: 3px; }
+    .player-badge .pname { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .player-badge.active-x {
+      border-color: #2563eb;
+      background: #0d1a35;
+      color: #93c5fd;
+    }
+    .player-badge.active-o {
+      border-color: #dc2626;
+      background: #2d0d0d;
+      color: #fca5a5;
+    }
+
+    /* Scoreboard */
+    .scoreboard {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+    .score-box {
+      flex: 1;
+      text-align: center;
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 10px 6px;
+    }
+    .score-num { font-size: 26px; font-weight: 600; color: #f0f0f0; }
+    .score-lbl { font-size: 11px; color: #555; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Status */
+    .status-msg {
+      text-align: center;
+      font-size: 14px;
+      color: #888;
+      min-height: 22px;
+      margin-bottom: 1rem;
+    }
+
+    /* Board */
+    .board {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 1.25rem;
+    }
+
+    .cell {
+      aspect-ratio: 1;
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.12s;
+      user-select: none;
+    }
+    .cell:hover:not(.taken) { background: #202020; }
+    .cell.taken { cursor: default; }
+    .cell.x-mark { color: #60a5fa; }
+    .cell.o-mark { color: #f87171; }
+    .cell.win-cell { background: #1f2937; border-color: #374151; }
+
+    /* Action buttons */
+    .action-row {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    footer {
+      margin-top: 2rem;
+      font-size: 12px;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h1>Tic Tac Toe ✗ ○</h1>
+
+  <!-- Setup -->
+  <div class="setup-screen" id="setup">
+    <p>Enter player names to start</p>
+    <div class="players-row">
+      <div class="player-field">
+        <label>Player 1 (✗)</label>
+        <input class="name-input" id="name1" placeholder="Player 1" maxlength="12" value="Player 1" />
+      </div>
+      <span class="vs-label">vs</span>
+      <div class="player-field">
+        <label>Player 2 (○)</label>
+        <input class="name-input" id="name2" placeholder="Player 2" maxlength="12" value="Player 2" />
+      </div>
+    </div>
+    <button class="primary" onclick="startGame()">Start Game →</button>
+  </div>
+
+  <!-- Game -->
+  <div class="game-screen" id="game">
+    <div class="badges-row">
+      <div class="player-badge active-x" id="badge1">
+        <span class="symbol">✗</span>
+        <span class="pname" id="bname1">P1</span>
+      </div>
+      <div class="scoreboard" style="flex:2;">
+        <div class="score-box">
+          <div class="score-num" id="s1">0</div>
+          <div class="score-lbl" id="sn1">P1</div>
+        </div>
+        <div class="score-box">
+          <div class="score-num" id="sd">0</div>
+          <div class="score-lbl">Draws</div>
+        </div>
+        <div class="score-box">
+          <div class="score-num" id="s2">0</div>
+          <div class="score-lbl" id="sn2">P2</div>
+        </div>
+      </div>
+      <div class="player-badge" id="badge2">
+        <span class="symbol">○</span>
+        <span class="pname" id="bname2">P2</span>
+      </div>
+    </div>
+
+    <div class="status-msg" id="status"></div>
+
+    <div class="board" id="board">
+      <div class="cell" onclick="play(0)" id="c0"></div>
+      <div class="cell" onclick="play(1)" id="c1"></div>
+      <div class="cell" onclick="play(2)" id="c2"></div>
+      <div class="cell" onclick="play(3)" id="c3"></div>
+      <div class="cell" onclick="play(4)" id="c4"></div>
+      <div class="cell" onclick="play(5)" id="c5"></div>
+      <div class="cell" onclick="play(6)" id="c6"></div>
+      <div class="cell" onclick="play(7)" id="c7"></div>
+      <div class="cell" onclick="play(8)" id="c8"></div>
+    </div>
+
+    <div class="action-row">
+      <button onclick="resetRound()">New Round</button>
+      <button onclick="resetAll()">Change Players</button>
+    </div>
+  </div>
+</div>
+
+<footer>Hosted via GitHub Pages</footer>
+
+<script>
+  let board, currentPlayer, gameOver, scores, names, drawCount;
+
+  function startGame() {
+    names = [
+      document.getElementById('name1').value.trim() || 'Player 1',
+      document.getElementById('name2').value.trim() || 'Player 2'
+    ];
+    scores = [0, 0];
+    drawCount = 0;
+    document.getElementById('setup').style.display = 'none';
+    document.getElementById('game').style.display = 'block';
+    updateNames();
+    resetRound();
+  }
+
+  function updateNames() {
+    document.getElementById('bname1').textContent = names[0];
+    document.getElementById('bname2').textContent = names[1];
+    document.getElementById('sn1').textContent = names[0];
+    document.getElementById('sn2').textContent = names[1];
+  }
+
+  function resetRound() {
+    board = Array(9).fill(null);
+    currentPlayer = 0;
+    gameOver = false;
+    for (let i = 0; i < 9; i++) {
+      const c = document.getElementById('c' + i);
+      c.textContent = '';
+      c.className = 'cell';
+    }
+    updateBadges();
+    updateStatus();
+  }
+
+  function resetAll() {
+    document.getElementById('game').style.display = 'none';
+    document.getElementById('setup').style.display = 'block';
+  }
+
+  function play(i) {
+    if (gameOver || board[i] !== null) return;
+    board[i] = currentPlayer;
+    const cell = document.getElementById('c' + i);
+    cell.textContent = currentPlayer === 0 ? '✗' : '○';
+    cell.classList.add('taken', currentPlayer === 0 ? 'x-mark' : 'o-mark');
+
+    const result = checkWinner();
+    if (result !== null) {
+      gameOver = true;
+      if (result === -1) {
+        drawCount++;
+        document.getElementById('sd').textContent = drawCount;
+        document.getElementById('status').textContent = "It's a draw!";
+      } else {
+        scores[result]++;
+        document.getElementById('s' + (result + 1)).textContent = scores[result];
+        document.getElementById('status').textContent = '🎉 ' + names[result] + ' wins!';
+      }
+    } else {
+      currentPlayer = 1 - currentPlayer;
+      updateBadges();
+      updateStatus();
+    }
+  }
+
+  function updateStatus() {
+    document.getElementById('status').textContent = names[currentPlayer] + "'s turn";
+  }
+
+  function updateBadges() {
+    document.getElementById('badge1').className = 'player-badge' + (currentPlayer === 0 ? ' active-x' : '');
+    document.getElementById('badge2').className = 'player-badge' + (currentPlayer === 1 ? ' active-o' : '');
+  }
+
+  function checkWinner() {
+    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for (const [a, b, c] of lines) {
+      if (board[a] !== null && board[a] === board[b] && board[b] === board[c]) {
+        [a, b, c].forEach(i => document.getElementById('c' + i).classList.add('win-cell'));
+        return board[a];
+      }
+    }
+    if (board.every(v => v !== null)) return -1;
+    return null;
+  }
+</script>
+</body>
+</html>
