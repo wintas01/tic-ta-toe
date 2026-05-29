@@ -1,353 +1,806 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tic Tac Toe — Multiplayer</title>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tic Tac Toe — Online Multiplayer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet"/>
   <style>
+    :root {
+      --bg: #080b0f;
+      --surface: #0e1318;
+      --surface2: #141b22;
+      --border: #1e2a35;
+      --x-color: #38bdf8;
+      --o-color: #fb923c;
+      --text: #e2e8f0;
+      --muted: #4a6070;
+      --win: #22c55e;
+      --gold: #f59e0b;
+      --gold2: #fbbf24;
+      --radius: 12px;
+    }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #0f0f0f;
-      color: #f0f0f0;
+      font-family: 'Syne', sans-serif;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 2rem 1rem;
+      padding: 1.5rem 1rem;
+      background-image: radial-gradient(ellipse at 20% 20%, #0d2137 0%, transparent 60%),
+                        radial-gradient(ellipse at 80% 80%, #1a0d0d 0%, transparent 60%);
     }
 
     h1 {
-      font-size: 1.6rem;
-      font-weight: 600;
-      letter-spacing: -0.5px;
+      font-family: 'Space Mono', monospace;
+      font-size: clamp(1.2rem, 4vw, 1.6rem);
+      font-weight: 700;
+      letter-spacing: -1px;
+      margin-bottom: 0.25rem;
+      background: linear-gradient(135deg, var(--x-color), var(--o-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      color: var(--muted);
+      font-family: 'Space Mono', monospace;
       margin-bottom: 2rem;
-      color: #ffffff;
+      letter-spacing: 1px;
+      text-transform: uppercase;
     }
 
-    .container {
-      width: 100%;
-      max-width: 420px;
+    .container { width: 100%; max-width: 400px; position: relative; }
+
+    /* ── CROWN BUTTON ── */
+    .crown-btn {
+      position: fixed;
+      top: 16px; right: 16px;
+      width: 42px; height: 42px;
+      background: linear-gradient(135deg, #1a1200, #2a1e00);
+      border: 1px solid var(--gold);
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s;
+      z-index: 200;
+      box-shadow: 0 0 12px rgba(245,158,11,0.15);
     }
-
-    /* Setup */
-    .setup-screen { text-align: center; }
-    .setup-screen p { font-size: 1rem; color: #aaa; margin-bottom: 1.5rem; }
-
-    .players-row {
-      display: flex;
-      gap: 16px;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-      margin-bottom: 1.5rem;
+    .crown-btn:hover {
+      background: linear-gradient(135deg, #2a1e00, #3d2c00);
+      box-shadow: 0 0 20px rgba(245,158,11,0.35);
+      transform: translateY(-1px);
     }
+    .crown-btn svg { width: 22px; height: 22px; }
 
-    .player-field { display: flex; flex-direction: column; align-items: center; gap: 8px; }
-    .player-field label { font-size: 13px; color: #888; }
+    /* ── SCREENS ── */
+    .screen { display: none; }
+    .screen.active { display: block; }
 
-    input.name-input {
-      background: #1a1a1a;
-      border: 1px solid #333;
-      border-radius: 8px;
-      color: #f0f0f0;
-      font-size: 15px;
-      padding: 8px 12px;
-      width: 130px;
-      outline: none;
-      text-align: center;
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      padding: 12px 28px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface2);
+      color: var(--text);
+      font-family: 'Syne', sans-serif;
+      font-size: 15px; font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s;
+      width: 100%; margin-bottom: 10px;
+    }
+    .btn:hover { background: #1e2d3d; border-color: #2e4055; transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn.primary { background: var(--x-color); border-color: var(--x-color); color: #000; }
+    .btn.primary:hover { background: #7dd3fc; }
+    .btn.orange { background: var(--o-color); border-color: var(--o-color); color: #000; }
+    .btn.orange:hover { background: #fdba74; }
+    .btn.gold { background: linear-gradient(135deg, var(--gold), var(--gold2)); border-color: var(--gold); color: #000; }
+    .btn.gold:hover { background: linear-gradient(135deg, var(--gold2), #fcd34d); }
+    .btn.small { padding: 8px 18px; font-size: 13px; width: auto; margin-bottom: 0; }
+    .btn.ghost { background: transparent; }
+    .btn.danger { background: #7f1d1d; border-color: #ef4444; color: #fca5a5; }
+    .btn.danger:hover { background: #991b1b; }
+
+    /* ── HOME ── */
+    .home-screen { text-align: center; }
+
+    /* ── JOIN/NAME INPUTS ── */
+    .join-input {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      font-family: 'Space Mono', monospace; font-size: 1.8rem; font-weight: 700;
+      letter-spacing: 8px; text-align: center; padding: 14px; width: 100%;
+      outline: none; margin-bottom: 10px; text-transform: uppercase;
       transition: border-color 0.15s;
     }
-    input.name-input:focus { border-color: #555; }
+    .join-input:focus { border-color: var(--x-color); }
 
-    .vs-label { font-size: 1.1rem; color: #555; font-weight: 500; }
+    .name-input {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      font-family: 'Syne', sans-serif; font-size: 15px;
+      padding: 12px 14px; width: 100%; outline: none; margin-bottom: 10px;
+      transition: border-color 0.15s;
+    }
+    .name-input:focus { border-color: var(--x-color); }
+    .name-input::placeholder { color: var(--muted); }
 
-    /* Buttons */
-    button {
-      background: #1e1e1e;
-      border: 1px solid #333;
-      border-radius: 8px;
-      color: #f0f0f0;
-      cursor: pointer;
-      font-size: 14px;
-      padding: 9px 22px;
-      transition: background 0.15s, border-color 0.15s;
+    /* ── WAITING ── */
+    .room-code-box {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 1.5rem; text-align: center; margin-bottom: 1rem;
     }
-    button:hover { background: #2a2a2a; border-color: #444; }
-    button:active { transform: scale(0.97); }
-    button.primary {
-      background: #2563eb;
-      border-color: #2563eb;
-      color: #fff;
-      font-weight: 500;
+    .room-code-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 8px; font-family: 'Space Mono', monospace; }
+    .room-code {
+      font-family: 'Space Mono', monospace; font-size: clamp(1.8rem, 8vw, 2.8rem);
+      font-weight: 700; letter-spacing: 8px; color: var(--x-color); cursor: pointer;
     }
-    button.primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
+    .copy-hint { font-size: 12px; color: var(--muted); margin-top: 8px; }
+    .pulse-dot { display: inline-block; width: 8px; height: 8px; background: var(--o-color); border-radius: 50%; animation: pulse 1.2s ease-in-out infinite; margin-right: 6px; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.4;transform:scale(0.7)} }
+    .waiting-text { font-size: 14px; color: var(--muted); display: flex; align-items: center; justify-content: center; margin-bottom: 1.5rem; }
 
-    /* Game screen */
-    .game-screen { display: none; }
+    /* ── GAME ── */
+    .players-row { display: flex; gap: 8px; margin-bottom: 1rem; }
+    .player-card {
+      flex: 1; padding: 10px 8px; text-align: center;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); transition: all 0.2s;
+    }
+    .player-card.active-x { border-color: var(--x-color); background: #0a1e2e; }
+    .player-card.active-o { border-color: var(--o-color); background: #1e120a; }
+    .player-card .symbol { font-size: 20px; font-family: 'Space Mono', monospace; font-weight: 700; }
+    .player-card.active-x .symbol { color: var(--x-color); }
+    .player-card.active-o .symbol { color: var(--o-color); }
+    .player-card .pname { font-size: 11px; color: var(--muted); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .player-card .pscore { font-size: 18px; font-weight: 700; margin-top: 2px; font-family: 'Space Mono', monospace; }
+    .draws-box {
+      padding: 10px 8px; text-align: center;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); min-width: 55px;
+    }
+    .draws-box .dlabel { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+    .draws-box .dnum { font-size: 18px; font-weight: 700; font-family: 'Space Mono', monospace; margin-top: 2px; }
 
-    /* Badges */
-    .badges-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.25rem;
-      gap: 8px;
+    .status-bar {
+      text-align: center; font-size: 13px; color: var(--muted);
+      margin-bottom: 1rem; min-height: 20px; font-family: 'Space Mono', monospace;
     }
+    .status-bar.winner { color: var(--win); font-weight: 700; font-size: 15px; }
 
-    .player-badge {
-      flex: 1;
-      text-align: center;
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid #2a2a2a;
-      background: #161616;
-      font-size: 13px;
-      color: #666;
-      transition: all 0.2s;
-    }
-    .player-badge .symbol { font-size: 18px; display: block; margin-bottom: 3px; }
-    .player-badge .pname { font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    .player-badge.active-x {
-      border-color: #2563eb;
-      background: #0d1a35;
-      color: #93c5fd;
-    }
-    .player-badge.active-o {
-      border-color: #dc2626;
-      background: #2d0d0d;
-      color: #fca5a5;
-    }
-
-    /* Scoreboard */
-    .scoreboard {
-      display: flex;
-      gap: 8px;
-      justify-content: center;
-      margin-bottom: 1.25rem;
-    }
-    .score-box {
-      flex: 1;
-      text-align: center;
-      background: #161616;
-      border: 1px solid #2a2a2a;
-      border-radius: 10px;
-      padding: 10px 6px;
-    }
-    .score-num { font-size: 26px; font-weight: 600; color: #f0f0f0; }
-    .score-lbl { font-size: 11px; color: #555; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-    /* Status */
-    .status-msg {
-      text-align: center;
-      font-size: 14px;
-      color: #888;
-      min-height: 22px;
-      margin-bottom: 1rem;
-    }
-
-    /* Board */
-    .board {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 1.25rem;
-    }
-
+    .board { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
     .cell {
-      aspect-ratio: 1;
-      background: #161616;
-      border: 1px solid #2a2a2a;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: background 0.12s;
-      user-select: none;
+      aspect-ratio: 1; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); display: flex; align-items: center; justify-content: center;
+      font-size: clamp(2rem, 10vw, 2.8rem); font-family: 'Space Mono', monospace; font-weight: 700;
+      cursor: pointer; transition: background 0.12s, transform 0.1s; user-select: none;
     }
-    .cell:hover:not(.taken) { background: #202020; }
-    .cell.taken { cursor: default; }
-    .cell.x-mark { color: #60a5fa; }
-    .cell.o-mark { color: #f87171; }
-    .cell.win-cell { background: #1f2937; border-color: #374151; }
+    .cell:hover:not(.taken):not(.locked) { background: var(--surface2); transform: scale(0.97); }
+    .cell.taken, .cell.locked { cursor: default; transform: none; }
+    .cell.x-mark { color: var(--x-color); }
+    .cell.o-mark { color: var(--o-color); }
+    .cell.win-cell { background: #0a1f0a; border-color: var(--win); }
 
-    /* Action buttons */
-    .action-row {
-      display: flex;
-      gap: 10px;
-      justify-content: center;
+    .actions-row { display: flex; gap: 8px; }
+    .turn-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 11px; font-weight: 600; background: #0a2a1a; color: var(--win);
+      border: 1px solid var(--win); margin-left: 6px; animation: fadein 0.3s;
+    }
+    @keyframes fadein { from{opacity:0} to{opacity:1} }
+
+    /* ── ADMIN MODAL ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(4px);
+      z-index: 300; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .modal-overlay.open { display: flex; }
+
+    .modal {
+      background: var(--surface);
+      border: 1px solid var(--gold);
+      border-radius: 16px;
+      width: 100%; max-width: 420px;
+      max-height: 90vh; overflow-y: auto;
+      padding: 1.5rem;
+      box-shadow: 0 0 40px rgba(245,158,11,0.15);
+      animation: slideup 0.25s ease;
+    }
+    @keyframes slideup { from{transform:translateY(20px);opacity:0} to{transform:translateY(0);opacity:1} }
+
+    .modal-header {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 1.5rem; padding-bottom: 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-header h2 {
+      font-family: 'Space Mono', monospace; font-size: 1rem;
+      background: linear-gradient(135deg, var(--gold), var(--gold2));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+      flex: 1;
+    }
+    .modal-close {
+      background: none; border: none; color: var(--muted); font-size: 20px;
+      cursor: pointer; padding: 4px; line-height: 1;
+    }
+    .modal-close:hover { color: var(--text); }
+
+    /* Admin Login */
+    .admin-login { text-align: center; }
+    .admin-login p { font-size: 13px; color: var(--muted); margin-bottom: 1rem; }
+    .pin-row { display: flex; gap: 8px; justify-content: center; margin-bottom: 1rem; }
+    .pin-dot {
+      width: 14px; height: 14px; border-radius: 50%;
+      border: 2px solid var(--gold); background: transparent;
+      transition: background 0.15s;
+    }
+    .pin-dot.filled { background: var(--gold); }
+    .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .num-btn {
+      padding: 14px; background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text);
+      font-family: 'Space Mono', monospace; font-size: 1.1rem; font-weight: 700;
+      cursor: pointer; transition: all 0.12s; width: 100%; margin-bottom: 0;
+    }
+    .num-btn:hover { background: #1e2d3d; border-color: var(--gold); }
+    .num-btn:active { transform: scale(0.95); }
+    .pin-error { color: #f87171; font-size: 12px; min-height: 18px; font-family: 'Space Mono', monospace; }
+
+    /* Admin Dashboard */
+    .admin-dashboard { display: none; }
+    .admin-section { margin-bottom: 1.5rem; }
+    .admin-section h3 {
+      font-size: 11px; color: var(--gold); text-transform: uppercase;
+      letter-spacing: 2px; margin-bottom: 10px; font-family: 'Space Mono', monospace;
     }
 
-    footer {
-      margin-top: 2rem;
-      font-size: 12px;
-      color: #333;
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .stat-card {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px;
+    }
+    .stat-card .sval { font-size: 24px; font-weight: 700; font-family: 'Space Mono', monospace; }
+    .stat-card .slbl { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    .room-list { display: flex; flex-direction: column; gap: 8px; }
+    .room-item {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 12px;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .room-item .rcode { font-family: 'Space Mono', monospace; font-size: 1rem; font-weight: 700; color: var(--x-color); }
+    .room-item .rinfo { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .room-item .rstatus {
+      font-size: 10px; padding: 3px 8px; border-radius: 20px;
+      font-family: 'Space Mono', monospace; white-space: nowrap;
+    }
+    .rstatus.waiting { background: #1a1200; color: var(--gold); border: 1px solid var(--gold); }
+    .rstatus.playing { background: #0a1f0a; color: var(--win); border: 1px solid var(--win); }
+    .rstatus.done { background: #1a0a0a; color: #f87171; border: 1px solid #f87171; }
+
+    .no-rooms { text-align: center; color: var(--muted); font-size: 13px; padding: 1rem; font-family: 'Space Mono', monospace; }
+
+    .admin-actions { display: flex; flex-direction: column; gap: 8px; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 10px 20px; border-radius: 30px;
+      font-size: 13px; font-family: 'Space Mono', monospace;
+      opacity: 0; pointer-events: none; transition: opacity 0.25s;
+      white-space: nowrap; z-index: 400;
+    }
+    #toast.show { opacity: 1; }
+
+    .divider { display: flex; align-items: center; gap: 10px; margin: 12px 0; }
+    .divider span { font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .divider::before, .divider::after { content:''; flex:1; height:1px; background: var(--border); }
+
+    .error-msg { color: #f87171; font-size: 12px; text-align: center; margin-bottom: 8px; min-height: 18px; font-family: 'Space Mono', monospace; }
+
+    @media (max-width: 400px) {
+      .room-code { letter-spacing: 4px; }
+      .join-input { letter-spacing: 4px; font-size: 1.4rem; }
     }
   </style>
 </head>
 <body>
 
-<div class="container">
-  <h1>Tic Tac Toe ✗ ○</h1>
+<!-- Crown Admin Button -->
+<button class="crown-btn" onclick="openAdmin()" title="Admin Portal">
+  <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M2 18h20v2H2v-2z" fill="#f59e0b"/>
+    <path d="M2 18L5 8l5 5 4-8 4 8 5-5 3 10H2z" fill="#f59e0b" stroke="#fbbf24" stroke-width="0.5" stroke-linejoin="round"/>
+    <circle cx="5" cy="8" r="1.5" fill="#fcd34d"/>
+    <circle cx="12" cy="5" r="1.5" fill="#fcd34d"/>
+    <circle cx="19" cy="8" r="1.5" fill="#fcd34d"/>
+  </svg>
+</button>
 
-  <!-- Setup -->
-  <div class="setup-screen" id="setup">
-    <p>Enter player names to start</p>
-    <div class="players-row">
-      <div class="player-field">
-        <label>Player 1 (✗)</label>
-        <input class="name-input" id="name1" placeholder="Player 1" maxlength="12" value="Player 1" />
-      </div>
-      <span class="vs-label">vs</span>
-      <div class="player-field">
-        <label>Player 2 (○)</label>
-        <input class="name-input" id="name2" placeholder="Player 2" maxlength="12" value="Player 2" />
-      </div>
-    </div>
-    <button class="primary" onclick="startGame()">Start Game →</button>
+<div class="container">
+  <h1>TIC TAC TOE</h1>
+  <p class="subtitle">Online Multiplayer</p>
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <input class="name-input" id="home-name" placeholder="Your name" maxlength="14"/>
+    <button class="btn primary" onclick="createGame()">⊕ Create Game</button>
+    <div class="divider"><span>or</span></div>
+    <button class="btn orange" onclick="showJoin()">⊞ Join with Code</button>
   </div>
 
-  <!-- Game -->
-  <div class="game-screen" id="game">
-    <div class="badges-row">
-      <div class="player-badge active-x" id="badge1">
-        <span class="symbol">✗</span>
-        <span class="pname" id="bname1">P1</span>
+  <!-- JOIN -->
+  <div class="screen" id="screen-join">
+    <input class="name-input" id="join-name" placeholder="Your name" maxlength="14"/>
+    <input class="join-input" id="join-code" placeholder="CODE" maxlength="4"/>
+    <div class="error-msg" id="join-error"></div>
+    <button class="btn orange" onclick="joinGame()">Join Game →</button>
+    <button class="btn ghost" onclick="showScreen('screen-home')">← Back</button>
+  </div>
+
+  <!-- WAITING -->
+  <div class="screen" id="screen-waiting">
+    <div class="room-code-box">
+      <div class="room-code-label">Share this code</div>
+      <div class="room-code" id="display-code">----</div>
+      <div class="copy-hint">Tap to copy</div>
+    </div>
+    <div class="waiting-text"><span class="pulse-dot"></span> Waiting for opponent...</div>
+    <button class="btn ghost small" onclick="cancelGame()">Cancel</button>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="screen-game">
+    <div class="players-row">
+      <div class="player-card" id="card-x">
+        <div class="symbol">✗</div>
+        <div class="pname" id="name-x">Player 1</div>
+        <div class="pscore" id="score-x">0</div>
       </div>
-      <div class="scoreboard" style="flex:2;">
-        <div class="score-box">
-          <div class="score-num" id="s1">0</div>
-          <div class="score-lbl" id="sn1">P1</div>
-        </div>
-        <div class="score-box">
-          <div class="score-num" id="sd">0</div>
-          <div class="score-lbl">Draws</div>
-        </div>
-        <div class="score-box">
-          <div class="score-num" id="s2">0</div>
-          <div class="score-lbl" id="sn2">P2</div>
-        </div>
+      <div class="draws-box">
+        <div class="dlabel">Draw</div>
+        <div class="dnum" id="score-d">0</div>
       </div>
-      <div class="player-badge" id="badge2">
-        <span class="symbol">○</span>
-        <span class="pname" id="bname2">P2</span>
+      <div class="player-card" id="card-o">
+        <div class="symbol">○</div>
+        <div class="pname" id="name-o">Player 2</div>
+        <div class="pscore" id="score-o">0</div>
       </div>
     </div>
-
-    <div class="status-msg" id="status"></div>
-
+    <div class="status-bar" id="status-bar">Loading...</div>
     <div class="board" id="board">
-      <div class="cell" onclick="play(0)" id="c0"></div>
-      <div class="cell" onclick="play(1)" id="c1"></div>
-      <div class="cell" onclick="play(2)" id="c2"></div>
-      <div class="cell" onclick="play(3)" id="c3"></div>
-      <div class="cell" onclick="play(4)" id="c4"></div>
-      <div class="cell" onclick="play(5)" id="c5"></div>
-      <div class="cell" onclick="play(6)" id="c6"></div>
-      <div class="cell" onclick="play(7)" id="c7"></div>
-      <div class="cell" onclick="play(8)" id="c8"></div>
+      <div class="cell" onclick="makeMove(0)" id="c0"></div>
+      <div class="cell" onclick="makeMove(1)" id="c1"></div>
+      <div class="cell" onclick="makeMove(2)" id="c2"></div>
+      <div class="cell" onclick="makeMove(3)" id="c3"></div>
+      <div class="cell" onclick="makeMove(4)" id="c4"></div>
+      <div class="cell" onclick="makeMove(5)" id="c5"></div>
+      <div class="cell" onclick="makeMove(6)" id="c6"></div>
+      <div class="cell" onclick="makeMove(7)" id="c7"></div>
+      <div class="cell" onclick="makeMove(8)" id="c8"></div>
     </div>
-
-    <div class="action-row">
-      <button onclick="resetRound()">New Round</button>
-      <button onclick="resetAll()">Change Players</button>
+    <div class="actions-row">
+      <button class="btn small" style="flex:1" onclick="requestRematch()">↺ Rematch</button>
+      <button class="btn small ghost" style="flex:1" onclick="leaveGame()">✕ Leave</button>
     </div>
   </div>
 </div>
 
-<footer>Hosted via GitHub Pages</footer>
+<!-- ADMIN MODAL -->
+<div class="modal-overlay" id="admin-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M2 18h20v2H2v-2z" fill="#f59e0b"/>
+        <path d="M2 18L5 8l5 5 4-8 4 8 5-5 3 10H2z" fill="#f59e0b" stroke="#fbbf24" stroke-width="0.5" stroke-linejoin="round"/>
+        <circle cx="5" cy="8" r="1.5" fill="#fcd34d"/>
+        <circle cx="12" cy="5" r="1.5" fill="#fcd34d"/>
+        <circle cx="19" cy="8" r="1.5" fill="#fcd34d"/>
+      </svg>
+      <h2>ADMIN PORTAL</h2>
+      <button class="modal-close" onclick="closeAdmin()">✕</button>
+    </div>
 
-<script>
-  let board, currentPlayer, gameOver, scores, names, drawCount;
+    <!-- Login -->
+    <div id="admin-login-panel" class="admin-login">
+      <p>Enter your 4-digit PIN to access the admin portal</p>
+      <div class="pin-row" id="pin-dots">
+        <div class="pin-dot" id="dot0"></div>
+        <div class="pin-dot" id="dot1"></div>
+        <div class="pin-dot" id="dot2"></div>
+        <div class="pin-dot" id="dot3"></div>
+      </div>
+      <div class="numpad">
+        <button class="num-btn" onclick="pinPress('1')">1</button>
+        <button class="num-btn" onclick="pinPress('2')">2</button>
+        <button class="num-btn" onclick="pinPress('3')">3</button>
+        <button class="num-btn" onclick="pinPress('4')">4</button>
+        <button class="num-btn" onclick="pinPress('5')">5</button>
+        <button class="num-btn" onclick="pinPress('6')">6</button>
+        <button class="num-btn" onclick="pinPress('7')">7</button>
+        <button class="num-btn" onclick="pinPress('8')">8</button>
+        <button class="num-btn" onclick="pinPress('9')">9</button>
+        <button class="num-btn" onclick="pinPress('clr')" style="color:var(--muted)">CLR</button>
+        <button class="num-btn" onclick="pinPress('0')">0</button>
+        <button class="num-btn" onclick="pinPress('del')" style="color:var(--muted)">⌫</button>
+      </div>
+      <div class="pin-error" id="pin-error"></div>
+    </div>
 
-  function startGame() {
-    names = [
-      document.getElementById('name1').value.trim() || 'Player 1',
-      document.getElementById('name2').value.trim() || 'Player 2'
-    ];
-    scores = [0, 0];
-    drawCount = 0;
-    document.getElementById('setup').style.display = 'none';
-    document.getElementById('game').style.display = 'block';
-    updateNames();
-    resetRound();
+    <!-- Dashboard -->
+    <div id="admin-dashboard" class="admin-dashboard">
+      <div class="admin-section">
+        <h3>📊 Live Stats</h3>
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="sval" id="stat-total">0</div>
+            <div class="slbl">Total Rooms</div>
+          </div>
+          <div class="stat-card">
+            <div class="sval" id="stat-active" style="color:var(--win)">0</div>
+            <div class="slbl">Active Games</div>
+          </div>
+          <div class="stat-card">
+            <div class="sval" id="stat-waiting" style="color:var(--gold)">0</div>
+            <div class="slbl">Waiting</div>
+          </div>
+          <div class="stat-card">
+            <div class="sval" id="stat-done" style="color:#f87171">0</div>
+            <div class="slbl">Finished</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>🎮 Active Rooms</h3>
+        <div class="room-list" id="room-list">
+          <div class="no-rooms">Loading rooms...</div>
+        </div>
+      </div>
+
+      <div class="admin-section">
+        <h3>⚡ Actions</h3>
+        <div class="admin-actions">
+          <button class="btn small" style="width:100%;margin-bottom:0" onclick="refreshAdmin()">↺ Refresh</button>
+          <button class="btn small danger" style="width:100%;margin-bottom:0" onclick="clearAllRooms()">🗑 Clear All Rooms</button>
+          <button class="btn small ghost" style="width:100%;margin-bottom:0;border-color:var(--border)" onclick="adminLogout()">← Logout</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, set, get, update, onValue, remove, off }
+    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBD0uLiubzG8sT0Cy4lcyJfgtk9WPZDlgU",
+    authDomain: "tic-ta-toe-27630.firebaseapp.com",
+    databaseURL: "https://tic-ta-toe-27630-default-rtdb.firebaseio.com",
+    projectId: "tic-ta-toe-27630",
+    storageBucket: "tic-ta-toe-27630.firebasestorage.app",
+    messagingSenderId: "822476979323",
+    appId: "1:822476979323:web:990681a9169a8a42e576de",
+    measurementId: "G-N5RY9J5WJG"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+
+  // ── ADMIN PIN (change this to your preferred 4-digit PIN) ──
+  const ADMIN_PIN = '1234';
+
+  // ── STATE ──
+  let myRole = null;
+  let myName = '';
+  let roomCode = null;
+  let gameRef = null;
+  let gameListener = null;
+  let adminLoggedIn = false;
+  let pinEntry = '';
+  let adminRoomsListener = null;
+
+  // ── HELPERS ──
+  function genCode() { return Math.random().toString(36).substring(2,6).toUpperCase(); }
+
+  function showScreen(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+  window.showScreen = showScreen;
+
+  function showJoin() { showScreen('screen-join'); }
+  window.showJoin = showJoin;
+
+  function toast(msg, duration=2500) {
+    const t = document.getElementById('toast');
+    t.textContent = msg; t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), duration);
   }
 
-  function updateNames() {
-    document.getElementById('bname1').textContent = names[0];
-    document.getElementById('bname2').textContent = names[1];
-    document.getElementById('sn1').textContent = names[0];
-    document.getElementById('sn2').textContent = names[1];
+  // ── ADMIN ──
+  function openAdmin() {
+    document.getElementById('admin-modal').classList.add('open');
+    if (!adminLoggedIn) showAdminLogin();
+    else showAdminDashboard();
+  }
+  window.openAdmin = openAdmin;
+
+  function closeAdmin() {
+    document.getElementById('admin-modal').classList.remove('open');
+    if (adminRoomsListener) { off(ref(db, 'rooms')); adminRoomsListener = null; }
+  }
+  window.closeAdmin = closeAdmin;
+
+  function showAdminLogin() {
+    pinEntry = '';
+    updatePinDots();
+    document.getElementById('pin-error').textContent = '';
+    document.getElementById('admin-login-panel').style.display = 'block';
+    document.getElementById('admin-dashboard').style.display = 'none';
   }
 
-  function resetRound() {
-    board = Array(9).fill(null);
-    currentPlayer = 0;
-    gameOver = false;
-    for (let i = 0; i < 9; i++) {
-      const c = document.getElementById('c' + i);
-      c.textContent = '';
-      c.className = 'cell';
+  function showAdminDashboard() {
+    document.getElementById('admin-login-panel').style.display = 'none';
+    document.getElementById('admin-dashboard').style.display = 'block';
+    loadAdminData();
+  }
+
+  function updatePinDots() {
+    for (let i = 0; i < 4; i++) {
+      document.getElementById('dot' + i).classList.toggle('filled', i < pinEntry.length);
     }
-    updateBadges();
-    updateStatus();
   }
 
-  function resetAll() {
-    document.getElementById('game').style.display = 'none';
-    document.getElementById('setup').style.display = 'block';
-  }
-
-  function play(i) {
-    if (gameOver || board[i] !== null) return;
-    board[i] = currentPlayer;
-    const cell = document.getElementById('c' + i);
-    cell.textContent = currentPlayer === 0 ? '✗' : '○';
-    cell.classList.add('taken', currentPlayer === 0 ? 'x-mark' : 'o-mark');
-
-    const result = checkWinner();
-    if (result !== null) {
-      gameOver = true;
-      if (result === -1) {
-        drawCount++;
-        document.getElementById('sd').textContent = drawCount;
-        document.getElementById('status').textContent = "It's a draw!";
+  function pinPress(val) {
+    const errEl = document.getElementById('pin-error');
+    errEl.textContent = '';
+    if (val === 'clr') { pinEntry = ''; updatePinDots(); return; }
+    if (val === 'del') { pinEntry = pinEntry.slice(0, -1); updatePinDots(); return; }
+    if (pinEntry.length >= 4) return;
+    pinEntry += val;
+    updatePinDots();
+    if (pinEntry.length === 4) {
+      if (pinEntry === ADMIN_PIN) {
+        adminLoggedIn = true;
+        showAdminDashboard();
       } else {
-        scores[result]++;
-        document.getElementById('s' + (result + 1)).textContent = scores[result];
-        document.getElementById('status').textContent = '🎉 ' + names[result] + ' wins!';
+        errEl.textContent = 'Wrong PIN. Try again.';
+        pinEntry = '';
+        updatePinDots();
+        // Shake dots
+        const dotsEl = document.getElementById('pin-dots');
+        dotsEl.style.animation = 'none';
+        dotsEl.offsetHeight;
+        dotsEl.style.animation = 'shake 0.3s ease';
       }
+    }
+  }
+  window.pinPress = pinPress;
+
+  function loadAdminData() {
+    if (adminRoomsListener) off(ref(db, 'rooms'));
+    adminRoomsListener = onValue(ref(db, 'rooms'), (snap) => {
+      const data = snap.val() || {};
+      const rooms = Object.entries(data);
+      let active = 0, waiting = 0, done = 0;
+      rooms.forEach(([, r]) => {
+        if (r.status === 'playing') active++;
+        else if (r.status === 'waiting') waiting++;
+        else if (r.status === 'done') done++;
+      });
+      document.getElementById('stat-total').textContent = rooms.length;
+      document.getElementById('stat-active').textContent = active;
+      document.getElementById('stat-waiting').textContent = waiting;
+      document.getElementById('stat-done').textContent = done;
+
+      const listEl = document.getElementById('room-list');
+      if (rooms.length === 0) {
+        listEl.innerHTML = '<div class="no-rooms">No active rooms</div>';
+        return;
+      }
+      listEl.innerHTML = rooms.map(([code, r]) => `
+        <div class="room-item">
+          <div>
+            <div class="rcode">${code}</div>
+            <div class="rinfo">${r.X?.name || '?'} vs ${r.O?.name || 'waiting...'}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px">
+            <span class="rstatus ${r.status}">${r.status}</span>
+            <button onclick="deleteRoom('${code}')" style="background:none;border:none;color:#f87171;cursor:pointer;font-size:14px;padding:4px;" title="Delete">🗑</button>
+          </div>
+        </div>
+      `).join('');
+    });
+  }
+
+  function refreshAdmin() { loadAdminData(); toast('Refreshed!'); }
+  window.refreshAdmin = refreshAdmin;
+
+  async function clearAllRooms() {
+    if (!confirm('Delete ALL rooms? This will end all active games.')) return;
+    await remove(ref(db, 'rooms'));
+    toast('All rooms cleared.');
+  }
+  window.clearAllRooms = clearAllRooms;
+
+  async function deleteRoom(code) {
+    await remove(ref(db, 'rooms/' + code));
+    toast('Room ' + code + ' deleted.');
+  }
+  window.deleteRoom = deleteRoom;
+
+  function adminLogout() {
+    adminLoggedIn = false;
+    if (adminRoomsListener) { off(ref(db, 'rooms')); adminRoomsListener = null; }
+    showAdminLogin();
+  }
+  window.adminLogout = adminLogout;
+
+  // ── GAME LOGIC ──
+  async function createGame() {
+    const nameEl = document.getElementById('home-name');
+    myName = nameEl.value.trim() || 'Player 1';
+    myRole = 'X'; roomCode = genCode();
+    await set(ref(db, 'rooms/' + roomCode), {
+      X: { name: myName, score: 0 }, O: null,
+      board: Array(9).fill(''), turn: 'X',
+      status: 'waiting', winner: '', rematch: { X: false, O: false }
+    });
+    document.getElementById('display-code').textContent = roomCode;
+    document.getElementById('display-code').onclick = () => {
+      navigator.clipboard.writeText(roomCode).then(() => toast('Code copied!'));
+    };
+    showScreen('screen-waiting');
+    listenRoom();
+  }
+  window.createGame = createGame;
+
+  async function joinGame() {
+    const nameEl = document.getElementById('join-name');
+    const codeEl = document.getElementById('join-code');
+    const errEl = document.getElementById('join-error');
+    myName = nameEl.value.trim() || 'Player 2';
+    const code = codeEl.value.trim().toUpperCase();
+    errEl.textContent = '';
+    if (code.length !== 4) { errEl.textContent = 'Enter a 4-letter code'; return; }
+    const snap = await get(ref(db, 'rooms/' + code));
+    if (!snap.exists()) { errEl.textContent = 'Room not found'; return; }
+    const data = snap.val();
+    if (data.status !== 'waiting') { errEl.textContent = 'Game already started'; return; }
+    myRole = 'O'; roomCode = code;
+    await update(ref(db, 'rooms/' + code), { 'O': { name: myName, score: 0 }, 'status': 'playing' });
+    showScreen('screen-game');
+    gameRef = ref(db, 'rooms/' + roomCode);
+    listenRoom();
+  }
+  window.joinGame = joinGame;
+
+  function listenRoom() {
+    if (!roomCode) return;
+    gameRef = ref(db, 'rooms/' + roomCode);
+    gameListener = onValue(gameRef, (snap) => {
+      if (!snap.exists()) { leaveGame(); return; }
+      const data = snap.val();
+      if (data.status === 'playing' && document.getElementById('screen-waiting').classList.contains('active')) {
+        showScreen('screen-game');
+      }
+      if (data.status === 'playing' || data.status === 'done') renderGame(data);
+    });
+  }
+
+  function renderGame(data) {
+    document.getElementById('name-x').textContent = data.X?.name || 'P1';
+    document.getElementById('name-o').textContent = data.O?.name || 'P2';
+    document.getElementById('score-x').textContent = data.X?.score ?? 0;
+    document.getElementById('score-o').textContent = data.O?.score ?? 0;
+    document.getElementById('score-d').textContent = data.draws ?? 0;
+    const board = data.board || Array(9).fill('');
+    const isDone = data.status === 'done';
+    const winCells = data.winCells || [];
+    for (let i = 0; i < 9; i++) {
+      const cell = document.getElementById('c' + i);
+      cell.textContent = board[i] === 'X' ? '✗' : board[i] === 'O' ? '○' : '';
+      cell.className = 'cell';
+      if (board[i]) cell.classList.add('taken', board[i] === 'X' ? 'x-mark' : 'o-mark');
+      if (winCells.includes(i)) cell.classList.add('win-cell');
+      if (isDone || data.turn !== myRole) cell.classList.add('locked');
+    }
+    document.getElementById('card-x').className = 'player-card' + (data.turn === 'X' && !isDone ? ' active-x' : '');
+    document.getElementById('card-o').className = 'player-card' + (data.turn === 'O' && !isDone ? ' active-o' : '');
+    const statusEl = document.getElementById('status-bar');
+    if (data.status === 'done') {
+      statusEl.className = 'status-bar winner';
+      statusEl.textContent = data.winner === 'draw' ? "It's a draw!" : '🎉 ' + (data.winner === 'X' ? data.X?.name : data.O?.name) + ' wins!';
+      const rx = data.rematch?.X || false, ro = data.rematch?.O || false;
+      if (rx && ro) startNewRound(data);
     } else {
-      currentPlayer = 1 - currentPlayer;
-      updateBadges();
-      updateStatus();
-    }
-  }
-
-  function updateStatus() {
-    document.getElementById('status').textContent = names[currentPlayer] + "'s turn";
-  }
-
-  function updateBadges() {
-    document.getElementById('badge1').className = 'player-badge' + (currentPlayer === 0 ? ' active-x' : '');
-    document.getElementById('badge2').className = 'player-badge' + (currentPlayer === 1 ? ' active-o' : '');
-  }
-
-  function checkWinner() {
-    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
-    for (const [a, b, c] of lines) {
-      if (board[a] !== null && board[a] === board[b] && board[b] === board[c]) {
-        [a, b, c].forEach(i => document.getElementById('c' + i).classList.add('win-cell'));
-        return board[a];
+      statusEl.className = 'status-bar';
+      if (data.turn === myRole) {
+        statusEl.innerHTML = 'Your turn <span class="turn-badge">YOU</span>';
+      } else {
+        statusEl.textContent = (data.turn === 'X' ? data.X?.name : data.O?.name) + "'s turn...";
       }
     }
-    if (board.every(v => v !== null)) return -1;
+  }
+
+  async function makeMove(i) {
+    if (!gameRef || !myRole) return;
+    const snap = await get(gameRef);
+    if (!snap.exists()) return;
+    const data = snap.val();
+    if (data.status !== 'playing' || data.turn !== myRole || data.board[i] !== '') return;
+    const board = [...data.board];
+    board[i] = myRole;
+    const result = checkWinner(board);
+    const updates = { board };
+    if (result === 'draw') {
+      updates.status = 'done'; updates.winner = 'draw';
+      updates.draws = (data.draws || 0) + 1; updates.winCells = [];
+    } else if (result) {
+      updates.status = 'done'; updates.winner = myRole; updates.winCells = result;
+      const scoreKey = myRole === 'X' ? 'X/score' : 'O/score';
+      updates[scoreKey] = (myRole === 'X' ? (data.X?.score || 0) : (data.O?.score || 0)) + 1;
+      updates['rematch/X'] = false; updates['rematch/O'] = false;
+    } else {
+      updates.turn = myRole === 'X' ? 'O' : 'X';
+    }
+    await update(gameRef, updates);
+  }
+  window.makeMove = makeMove;
+
+  async function requestRematch() {
+    if (!gameRef || !myRole) return;
+    await update(gameRef, { ['rematch/' + myRole]: true });
+    toast('Waiting for opponent...');
+  }
+  window.requestRematch = requestRematch;
+
+  async function startNewRound() {
+    await update(gameRef, {
+      board: Array(9).fill(''), turn: 'X', status: 'playing',
+      winner: '', winCells: [], 'rematch/X': false, 'rematch/O': false
+    });
+  }
+
+  async function leaveGame() {
+    if (gameListener && gameRef) off(gameRef, 'value', gameListener);
+    if (gameRef) await remove(gameRef);
+    gameRef = null; gameListener = null; myRole = null; roomCode = null;
+    showScreen('screen-home');
+  }
+  window.leaveGame = leaveGame;
+
+  async function cancelGame() {
+    if (gameRef) await remove(gameRef);
+    if (gameListener && gameRef) off(gameRef, 'value', gameListener);
+    gameRef = null; gameListener = null; myRole = null; roomCode = null;
+    showScreen('screen-home');
+  }
+  window.cancelGame = cancelGame;
+
+  function checkWinner(board) {
+    const lines = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for (const [a,b,c] of lines) {
+      if (board[a] && board[a] === board[b] && board[b] === board[c]) return [a,b,c];
+    }
+    if (board.every(v => v !== '')) return 'draw';
     return null;
   }
 </script>
